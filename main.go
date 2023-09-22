@@ -2,10 +2,13 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/fogleman/gg"
 )
 
 var (
@@ -14,27 +17,42 @@ var (
 	specialCharSet = "!#$%&*"
 	numberSet = "0123456789"
 	allCharSet = lowerCharSet + upperCharSet + specialCharSet + numberSet
+	options int
+	lenPwd int
+	username string
+	system string
+	filename string
+	s1 string
+	s2 string
+	gree string
+	data1 []byte
+	minSpecialChar = 1
+	minNum = 1
+	minUpperCase = 1
+	i = 5.0
+)
+
+const (
+	W = 1024
+	H = 512
+	h = 24
+	P = 16
+	TXT = "Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation. Whenever I find myself growing grim about the mouth; whenever it is a damp, drizzly November in my soul; whenever I find myself involuntarily pausing before coffin warehouses, and bringing up the rear of every funeral I meet; and especially whenever my hypos get such an upper hand of me, that it requires a strong moral principle to prevent me from deliberately stepping into the street, and methodically knocking people's hats off—then, I account it high time to get to sea as soon as I can. This is my substitute for pistol and ball. With a philosophical flourish Cato throws himself upon his sword; I quietly take to the ship. There is nothing surprising in this. If they but knew it, almost all men in their degree, some time or other, cherish very nearly the same feelings towards the ocean with me."
 )
 
 func main() {
-	var options int
-	var lenPwd int
-	var username string
-	var system string
-	var filename string
-	var s1 string
-	var s2 string
-	var gree string
-	minSpecialChar := 1
-	minNum := 1
-	minUpperCase := 1
+	// dc := gg.NewContext(1000, 1000)
+	// dc.DrawCircle(500, 500, 400)
+	// dc.SetRGB(0, 0, 0)
+	// dc.Fill()
+	// dc.SavePNG("out.png")
+
 	for {
 		get_menu()
 		fmt.Print("Option: ")
 		fmt.Scanln(&options)
 		if options == 1 {
 			// rand.Seed(time.Now().Unix())
-			var data []byte
 			fmt.Print("Length: ")
 			fmt.Scanln(&lenPwd)
 			fmt.Print("Username: ")
@@ -48,9 +66,10 @@ func main() {
 			gree = s1 + " " +s2
 			pwd := generatePassword(lenPwd, minSpecialChar, minNum, minUpperCase)
 			fmt.Println("Password generate success")
-			data = get_content_email(gree, system, strconv.Itoa(lenPwd), username, pwd)
-			err := os.WriteFile("./"+filename+".txt", data, 0644)
+			data1, lines := get_content_email(gree, system, strconv.Itoa(lenPwd), username, pwd)
+			err := os.WriteFile("./"+filename+".txt", data1, 0644)
 			check(err)
+			get_draw(filename, lines)
 			// d1 := []byte("Hello\ngo\n")
 			// f, err := os.Create("./dat2")
 			// check(err)
@@ -75,25 +94,73 @@ func get_menu() {
 	fmt.Println("2 Exit")
 }
 
-func get_content_email(gree, system, lenPwd, username, pwd string) []byte {
-	m := make(map[string]string)
-	m["gree"] = gree
-	m["p1"] = fmt.Sprintf("Por este medio remito las credenciales de acceso a SIPAP %s", system)
-	m["p2"] = "Tener en cuenta las siguientes políricas de seguridad al cambiar la contraseña:"
-	m["p3"] = "- No debe ser una palabra que pueda estar en algún diccionario, ni relacionado al nombre de usuario o entidad."
-	m["p4"] = "- No debe ser correlativo al anterior, ni similar en las últimas 10 contraseñas."
-	m["p5"] = fmt.Sprintf("- Debe contener por los menos una mayúscula, una minúscula, un número y un carácter especial y de longitud mínima de %s.", lenPwd)
-	m["p6"] = "- Vigencia mínima de contraseña, de 1(un) días. Un solo cambio por día es posible."
-	m["p7"] = "- Escriba su contraseña en un bloc de notas para luego copiar y pegar en el sistema."
-	m["p8"] = "\nUSUARIO"
-	m["p9"] = username
-	m["p10"] = "\nCONTRASEÑA"
-	m["p11"] = pwd
-	m["p12"] = "\nFavor dar acuse."
-	m["p13"] = "Saludos cordiales."
+func get_draw(filename string, lines []string) {
+	dc := gg.NewContext(W, H)
+	dc.SetRGB(0, 0, 0)
+	//dc.LoadFontFace("/Library/Fonts/Impact.ttf", 128)
+	
+	for i, line := range lines {
+		y := H/2 - h*len(lines)/2 + i*h
+		x := float64(W/2)
+		dc.DrawStringWrapped(line, x+3, float64(y)+3 , 0.5, 0.5, W, 1.5, gg.AlignLeft)
+	}
+	
+	mask := dc.AsMask()
 
-	data := []byte(string(m["gree"]+"\n"+m["p1"]+"\n"+m["p2"]+"\n"+m["p3"]+"\n"+m["p4"]+"\n"+m["p5"]+"\n"+m["p6"]+"\n"+m["p7"]+"\n"+m["p8"]+"\n"+m["p9"]+"\n"+m["p10"]+"\n"+m["p11"]+"\n"+m["p12"]+"\n"+m["p13"]))
-	return data
+	dc.SetRGB(1, 1, 1)
+	dc.Clear()
+
+	g := gg.NewLinearGradient(0, 0, W, H)
+	g.AddColorStop(0, color.RGBA{50, 48, 48, 255})
+	g.AddColorStop(1, color.RGBA{31, 27, 27, 255})
+	// g.AddColorStop(0, color.RGBA{255, 0, 0, 255})
+	// g.AddColorStop(1, color.RGBA{0, 0, 255, 255})
+	dc.SetFillStyle(g)
+
+	dc.SetMask(mask)
+	dc.DrawRectangle(0, 0, W, H)
+	dc.Fill()
+	dc.SavePNG(filename+".png")
+}
+
+func get_content_email(gree, system, lenPwd, username, pwd string) ([]byte, []string) {
+	var lines = []string {
+		gree,
+		fmt.Sprintf("Por este medio remito las credenciales de acceso a SIPAP %s", system),
+		"Tener en cuenta las siguientes políricas de seguridad al cambiar la contraseña:",
+		"- No debe ser una palabra que pueda estar en algún diccionario, ni relacionado al nombre de usuario o entidad.",
+		"- No debe ser correlativo al anterior, ni similar en las últimas 10 contraseñas.",
+		fmt.Sprintf("- Debe contener por los menos una mayúscula, una minúscula, un número y un carácter especial y de longitud mínima de %s.", lenPwd),
+		"- Vigencia mínima de contraseña, de 1(un) días. Un solo cambio por día es posible.",
+		"- Escriba su contraseña en un bloc de notas para luego copiar y pegar en el sistema.",
+		"USUARIO",
+		username,
+		"CONTRASEÑA",
+		pwd,
+		"Favor dar acuse.",
+		"Saludos cordiales.",
+
+	}
+
+	m := make(map[int]string)
+	m[1] = gree
+	m[2] = fmt.Sprintf("Por este medio remito las credenciales de acceso a SIPAP %s", system)
+	m[3] = "Tener en cuenta las siguientes políricas de seguridad al cambiar la contraseña:"
+	m[4] = "- No debe ser una palabra que pueda estar en algún diccionario, ni relacionado al nombre de usuario o entidad."
+	m[5] = "- No debe ser correlativo al anterior, ni similar en las últimas 10 contraseñas."
+	m[6] = fmt.Sprintf("- Debe contener por los menos una mayúscula, una minúscula, un número y un carácter especial y de longitud mínima de %s.", lenPwd)
+	m[7] = "- Vigencia mínima de contraseña, de 1(un) días. Un solo cambio por día es posible."
+	m[8] = "- Escriba su contraseña en un bloc de notas para luego copiar y pegar en el sistema."
+	m[9] = "\nUSUARIO"
+	m[10] = username
+	m[11] = "\nCONTRASEÑA"
+	m[12] = pwd
+	m[13] = "\nFavor dar acuse."
+	m[14] = "Saludos cordiales."
+
+	// data1 := []byte(string(m["gree"]+"\n"+m["p1"]+"\n"+m["p2"]+"\n"+m["p3"]+"\n"+m["p4"]+"\n"+m["p5"]+"\n"+m["p6"]+"\n"+m["p7"]+"\n"+m["p8"]+"\n"+m["p9"]+"\n"+m["p10"]+"\n"+m["p11"]+"\n"+m["p12"]+"\n"+m["p13"]))
+	data1 := []byte(string(m[1]+"\n"+m[2]+"\n"+m[3]+"\n"+m[4]+"\n"+m[5]+"\n"+m[6]+"\n"+m[7]+"\n"+m[8]+"\n"+m[9]+"\n"+m[10]+"\n"+m[11]+"\n"+m[12]+"\n"+m[13]+"\n"+m[14]))
+	return data1, lines
 }
 
 func generatePassword(passwordLength, minSpecialChar, minNum, minUpperCase int) string {
