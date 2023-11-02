@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/disintegration/imaging"
 	"github.com/jung-kurt/gofpdf"
 	"github.com/karmdip-mi/go-fitz"
 )
@@ -18,7 +19,7 @@ var (
 	upperCharSet = "ABCDEFGHIGKLMNOPQRSTUVWXYZ"
 	specialCharSet = "!#$%&*"
 	numberSet = "0123456789"
-	allCharSet = lowerCharSet + upperCharSet + specialCharSet + numberSet
+	allCharSet = lowerCharSet + upperCharSet + numberSet
 	options int
 	lenPwd int
 	username string
@@ -64,6 +65,7 @@ func main() {
 			fmt.Println("TXT generate successfully")
 			GetPdf(filename)
 			PdfToImage(filename)
+			CropImage(filename)
 		}
 
 		if options == 2 {
@@ -155,8 +157,8 @@ func GetPdf(file string) {
 	// pdf.SetFont("Arial", "B", 16)
 	// pdf.MoveTo(0, 10)
 	// pdf.Cell(1, 1, "Title")
-	pdf.SetFont("Arial", "", 14)
-	pdf.MoveTo(0, 10)
+	pdf.SetFont("Arial", "", 10)
+	pdf.MoveTo(0, 0)
 	tr := pdf.UnicodeTranslatorFromDescriptor("")
 	width, _ := pdf.GetPageSize()
 	pdf.MultiCell(width, 10, tr(string(text)), "" , "", false)
@@ -188,6 +190,15 @@ func PdfToImage(filename string) {
 			f.Close()
 		}
 	}
+}
+
+func CropImage(filename string) {
+	src, err := imaging.Open("./img/"+filename+".jpg")
+	check(err)
+	src = imaging.CropAnchor(src, 2410, 2120, imaging.TopLeft)
+	src = imaging.Resize(src, 700, 616, imaging.Lanczos)
+	err = imaging.Save(src, "./img/"+filename+".jpg")
+	check(err)
 }
 
 // func SaveToImage() {
