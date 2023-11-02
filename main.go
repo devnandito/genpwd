@@ -5,9 +5,11 @@ import (
 	"image/jpeg"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/disintegration/imaging"
 	"github.com/jung-kurt/gofpdf"
@@ -32,6 +34,7 @@ var (
 	minSpecialChar = 1
 	minNum = 1
 	minUpperCase = 1
+	flag = 0
 	// i = 5.0
 )
 
@@ -43,33 +46,45 @@ var (
 
 func main() {
 	for {
-		get_menu()
-		fmt.Print("Option: ")
-		fmt.Scanln(&options)
+		if flag == 0 {
+			get_menu()
+			fmt.Print("Option: ")
+			fmt.Scanln(&options)
+			flag = 1
+		}
+		
 		if options == 1 {
 			fmt.Print("Length: ")
-			fmt.Scanln(&lenPwd)
-			fmt.Print("Username: ")
-			fmt.Scanln(&username)
-			fmt.Print("System: ")
-			fmt.Scanln(&system)
-			fmt.Print("Filename: ")
-			fmt.Scanln(&filename)
-			fmt.Print("Gretings: ")
-			fmt.Scanln(&s1,&s2)
-			gree = s1 + " " +s2
-			pwd := GeneratePassword(lenPwd, minSpecialChar, minNum, minUpperCase)
-			data1 :=GetContentEmail(gree, system, strconv.Itoa(lenPwd), username, pwd)
-			err := os.WriteFile("./txt/"+filename+".txt", data1, 0644)
-			check(err)
-			fmt.Println("TXT generate successfully")
-			GetPdf(filename)
-			PdfToImage(filename)
-			CropImage(filename)
-		}
-
-		if options == 2 {
+			if _, err := fmt.Scanln(&lenPwd); err != nil {
+				fmt.Println("Value is not a number")
+				Cleanner()
+			} else {
+				fmt.Print("Username: ")
+				fmt.Scanln(&username)
+				fmt.Print("System: ")
+				fmt.Scanln(&system)
+				fmt.Print("Filename: ")
+				fmt.Scanln(&filename)
+				fmt.Print("Gretings: ")
+				fmt.Scanln(&s1,&s2)
+				gree = s1 + " " +s2
+				pwd := GeneratePassword(lenPwd, minSpecialChar, minNum, minUpperCase)
+				data1 := GetContentEmail(gree, system, strconv.Itoa(lenPwd), username, pwd)
+				err := os.WriteFile("./txt/"+filename+".txt", data1, 0644)
+				check(err)
+				fmt.Println("TXT generate successfully")
+				GetPdf(filename)
+				PdfToImage(filename)
+				CropImage(filename)
+				Cleanner()
+				flag = 0
+			}
+		} else if options == 2 {
 			break
+		} else {
+			fmt.Println("Options not valid")
+			Cleanner()
+			flag = 0
 		}
 	}
 }
@@ -84,6 +99,13 @@ func get_menu() {
 	fmt.Println("Enter option")
 	fmt.Println("1. Generate password")
 	fmt.Println("2 Exit")
+}
+
+func Cleanner() {
+	time.Sleep(2 * time.Second)
+	cmd := exec.Command("clear")
+	cmd.Stdout = os.Stdout
+	cmd.Run()
 }
 
 func GetContentEmail(gree, system, lenPwd, username, pwd string) ([]byte) {
